@@ -29,5 +29,6 @@ func New() *gin.Engine {
 	// router.Use(cors.Default())
 	router.Use(CORS())
 	router.GET("/connectors", controllers.FindConnectors)
+	router.POST("/connectors", controllers.CreateConnector)
 	return router
 }
