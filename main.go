@@ -2,18 +2,13 @@ package main
 
 import (
 	"streamingservice/db"
-
-	"github.com/gin-gonic/gin"
+	"streamingservice/routes"
 )
 
 func main() {
-	r := gin.Default()
+	d := db.New()
+	db.AutoMigrate(d)
+	r := routes.New()
 
-	db.TestDB()
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
-	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	r.Run("0.0.0.0:8000")
 }
