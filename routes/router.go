@@ -30,5 +30,8 @@ func New() *gin.Engine {
 	router.Use(CORS())
 	router.GET("/connectors", controllers.FindConnectors)
 	router.POST("/connectors", controllers.CreateConnector)
+	router.GET("/connector-classes", controllers.GetConnectorClasses)
+	router.GET("/convertors", controllers.GetConvertors)
+	router.POST("/connectors/start/:entityId", controllers.PostConnector)
 	return router
 }
