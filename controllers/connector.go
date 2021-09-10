@@ -3,6 +3,7 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"streamingservice/config"
@@ -13,14 +14,46 @@ import (
 )
 
 var DB = db.New()
+var conf = config.NewConfig()
 
 // GET CONNECTORS
 
 func FindConnectors(c *gin.Context) {
 	var connectors []models.ConnectorEntity
+	var connectorsWithStatus []models.ConnectorEntity
 	DB.Find(&connectors)
+	fmt.Println()
+	var _, isKafkaConnectOpenErr = http.Get(conf.KafkaEndpoint)
+	if connectors != nil && isKafkaConnectOpenErr == nil {
+		type responseStatus struct {
+			Connector struct {
+				State string `json:"state"`
+			} `json:"connector"`
+		}
+		for _, connector := range connectors {
+			response, err := http.Get(conf.KafkaEndpoint + "connectors/" + connector.Name + "/status")
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			}
+			if response.StatusCode != 200 {
+				continue
+			}
+			responseData, err := ioutil.ReadAll(response.Body)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			}
 
-	c.JSON(http.StatusOK, gin.H{"data": connectors})
+			var state responseStatus
+			_ = json.Unmarshal(responseData, &state)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			}
+
+			connector.Status = state.Connector.State
+			connectorsWithStatus = append(connectorsWithStatus, connector)
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"data": connectorsWithStatus})
 }
 
 //POST CONNECTORS
@@ -46,8 +79,6 @@ func GetConnectorClasses(c *gin.Context) {
 		Version string `json:"version"`
 	}
 	var conn []connectorClass
-
-	conf := config.NewConfig()
 
 	response, err := http.Get(conf.KafkaEndpoint + "connector-plugins")
 	if err != nil {
@@ -110,7 +141,7 @@ func PostConnector(c *gin.Context) {
 		Name:   connector.Name,
 		Config: &configuration,
 	}
-	conf := config.NewConfig()
+
 	// c.JSON(http.StatusOK, gin.H{"data": conn})
 	jsonToSend, _ := json.Marshal(conn)
 	resp, err := http.Post(conf.KafkaEndpoint+"connectors", "application/json", bytes.NewBuffer(jsonToSend))
