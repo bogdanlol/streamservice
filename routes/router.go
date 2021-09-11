@@ -33,5 +33,8 @@ func New() *gin.Engine {
 	router.GET("/connector-classes", controllers.GetConnectorClasses)
 	router.GET("/convertors", controllers.GetConvertors)
 	router.POST("/connectors/start/:entityId", controllers.PostConnector)
+	router.GET("/connectors/:entityId", controllers.FindConnector)
+	router.PUT("/connectors/:entityId", controllers.EditConnector)
+	router.DELETE("/connectors/:entityId", controllers.RemoveConnector)
 	return router
 }

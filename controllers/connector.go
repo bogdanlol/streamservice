@@ -3,7 +3,6 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"streamingservice/config"
@@ -22,7 +21,6 @@ func FindConnectors(c *gin.Context) {
 	var connectors []models.ConnectorEntity
 	var connectorsWithStatus []models.ConnectorEntity
 	DB.Find(&connectors)
-	fmt.Println()
 	var _, isKafkaConnectOpenErr = http.Get(conf.KafkaEndpoint)
 	if connectors != nil && isKafkaConnectOpenErr == nil {
 		type responseStatus struct {
@@ -53,7 +51,26 @@ func FindConnectors(c *gin.Context) {
 			connectorsWithStatus = append(connectorsWithStatus, connector)
 		}
 	}
-	c.JSON(http.StatusOK, gin.H{"data": connectorsWithStatus})
+
+	if connectorsWithStatus != nil {
+		c.JSON(http.StatusOK, gin.H{"data": connectorsWithStatus})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"data": connectors})
+	}
+
+}
+func FindConnector(c *gin.Context) {
+	var connector *models.ConnectorEntity
+	id, isPresent := c.Params.Get("entityId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
+	}
+
+	if err := DB.First(&connector, id).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	c.JSON(http.StatusOK, gin.H{"data": connector})
+
 }
 
 //POST CONNECTORS
@@ -70,6 +87,34 @@ func CreateConnector(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": input})
 
 }
+func EditConnector(c *gin.Context) {
+	// Validate input
+	_, isPresent := c.Params.Get("entityId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
+	}
+	var input models.ConnectorEntity
+
+	DB.First(&input)
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	DB.Save(&input)
+
+	c.JSON(http.StatusOK, gin.H{"data": input})
+
+}
+func RemoveConnector(c *gin.Context) {
+	id, isPresent := c.Params.Get("entityId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
+	}
+	DB.Delete(&models.ConnectorEntity{}, id)
+	c.JSON(http.StatusOK, gin.H{"data": "connector has been deleted"})
+
+}
 
 //get connector classes
 func GetConnectorClasses(c *gin.Context) {
@@ -83,7 +128,9 @@ func GetConnectorClasses(c *gin.Context) {
 	response, err := http.Get(conf.KafkaEndpoint + "connector-plugins")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
+
 	responseData, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
