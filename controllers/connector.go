@@ -3,12 +3,17 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"streamingservice/config"
 	"streamingservice/db"
 	"streamingservice/models"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 )
 
@@ -201,4 +206,51 @@ func PostConnector(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": responseData})
+}
+
+func StopConnector(c *gin.Context) {
+	client := &http.Client{}
+
+	name, isPresent := c.Params.Get("entityName")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
+	}
+
+	// c.JSON(http.StatusOK, gin.H{"data": conn})
+	req, err := http.NewRequest(http.MethodDelete, conf.KafkaEndpoint+"connectors/"+name, nil)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	defer resp.Body.Close()
+
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+func UploadConnectorPlugin(c *gin.Context) {
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		spew.Dump(file, header)
+		c.String(http.StatusBadRequest, fmt.Sprintf("file err : %s", err.Error()))
+		return
+	}
+
+	filename := header.Filename
+
+	out, err := os.Create("/opt/kafka/confluent-6.1.0/share/java/" + filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer out.Close()
+	_, err = io.Copy(out, file)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	filepath := "http://localhost:8080/file/" + filename
+	c.JSON(http.StatusOK, gin.H{"filepath": filepath})
 }

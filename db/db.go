@@ -9,7 +9,7 @@ import (
 )
 
 func New() *gorm.DB {
-	db, err := gorm.Open("mysql", "root:pass@/streamservice?charset=utf8&parseTime=True&loc=Local")
+	db, err := gorm.Open("mysql", "root:bogdanlol3142@/streamservice?charset=utf8&parseTime=True&loc=Local")
 	if err != nil {
 		fmt.Println("eror during connection to the database :", err)
 	}
@@ -18,7 +18,7 @@ func New() *gorm.DB {
 	return db
 }
 func TestDB() *gorm.DB {
-	db, err := gorm.Open("mysql", "root:pass@/streamservice?charset=utf8&parseTime=True&loc=Local")
+	db, err := gorm.Open("mysql", "root:bogdanlol3142@/streamservice?charset=utf8&parseTime=True&loc=Local")
 	if err != nil {
 		fmt.Println("eror during connection to the database :", err)
 	}

@@ -36,5 +36,7 @@ func New() *gin.Engine {
 	router.GET("/connectors/:entityId", controllers.FindConnector)
 	router.PUT("/connectors/:entityId", controllers.EditConnector)
 	router.DELETE("/connectors/:entityId", controllers.RemoveConnector)
+	router.POST("/connectors/stop/:entityName", controllers.StopConnector)
+	router.POST("/connectors-plugins/upload", controllers.UploadConnectorPlugin)
 	return router
 }
