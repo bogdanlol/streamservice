@@ -12,9 +12,10 @@ import (
 	"streamingservice/config"
 	"streamingservice/db"
 	"streamingservice/models"
+	"streamingservice/utils"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
+	"github.com/h2non/filetype"
 )
 
 var DB = db.New()
@@ -234,8 +235,7 @@ func StopConnector(c *gin.Context) {
 func UploadConnectorPlugin(c *gin.Context) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
-		spew.Dump(file, header)
-		c.String(http.StatusBadRequest, fmt.Sprintf("file err : %s", err.Error()))
+		c.JSON(http.StatusBadRequest, fmt.Sprintf("file err : %s", err.Error()))
 		return
 	}
 
@@ -251,6 +251,32 @@ func UploadConnectorPlugin(c *gin.Context) {
 		log.Fatal(err)
 	}
 
-	filepath := "http://localhost:8080/file/" + filename
-	c.JSON(http.StatusOK, gin.H{"filepath": filepath})
+	buf, _ := ioutil.ReadFile("/opt/kafka/confluent-6.1.0/share/java/" + filename)
+	kind, _ := filetype.Match(buf)
+	if kind == filetype.Unknown {
+		fmt.Println("Unknown file type")
+		return
+	}
+	if kind.Extension == "zip" {
+		_, err := utils.Unzip("/opt/kafka/confluent-6.1.0/share/java/"+filename, "/opt/kafka/confluent-6.1.0/share/java/")
+		if err != nil {
+			c.JSON(http.StatusBadRequest, fmt.Sprintf("file err : %s", err.Error()))
+			return
+		}
+	} else {
+		r, err := os.Open("/opt/kafka/confluent-6.1.0/share/java/" + filename)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, fmt.Sprintf("file err : %s", err.Error()))
+		}
+
+		err = utils.Untar("/opt/kafka/confluent-6.1.0/share/java/", r)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, fmt.Sprintf("Untaring err : %s", err.Error()))
+		}
+	}
+	err = os.Remove("/opt/kafka/confluent-6.1.0/share/java/" + filename)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, fmt.Sprintf("Untaring err : %s", err.Error()))
+	}
+
 }
