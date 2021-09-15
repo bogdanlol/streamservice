@@ -280,3 +280,59 @@ func UploadConnectorPlugin(c *gin.Context) {
 	}
 
 }
+
+func ValidateConnector(c *gin.Context) {
+	// Validate input
+	client := &http.Client{}
+
+	var input models.ConnectorEntity
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	// c.JSON(http.StatusOK, gin.H{"data": conn})
+	jsonToSend, _ := json.Marshal(input)
+
+	req, err := http.NewRequest(http.MethodPut, conf.KafkaEndpoint+"connector-plugins/"+input.ConnectorClass+"/config/validate/", bytes.NewBuffer(jsonToSend))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	responseData, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	type validateResponse struct {
+		ErrorCount int `json:"error_count"`
+		Configs    []struct {
+			Value struct {
+				Name   string   `json:"name"`
+				Errors []string `json:"errors"`
+			} `json:"value"`
+		} `json:"configs"`
+	}
+
+	var valResp validateResponse
+	var validationErrors []string
+	err = json.Unmarshal(responseData, &valResp)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	if valResp.ErrorCount != 0 {
+		for _, conf := range valResp.Configs {
+			if conf.Value.Errors != nil {
+				for _, err := range conf.Value.Errors {
+					validationErrors = append(validationErrors, err)
+				}
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"errors": validationErrors})
+
+}
