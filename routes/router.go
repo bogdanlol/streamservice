@@ -39,5 +39,8 @@ func New() *gin.Engine {
 	router.POST("/connectors/stop/:entityName", controllers.StopConnector)
 	router.POST("/connectors-plugins/upload", controllers.UploadConnectorPlugin)
 	router.PUT("/connectors-validate", controllers.ValidateConnector)
+	router.GET("/workers", controllers.FindWorkers)
+	router.POST("/workers/:entityId/start", controllers.StartKafkaConnect)
+	router.POST("/workers/:entityId/stop", controllers.StopKafkaConnect)
 	return router
 }
