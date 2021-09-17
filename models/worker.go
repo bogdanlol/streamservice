@@ -6,6 +6,8 @@ type WorkerEntity struct {
 	gorm.Model
 	Name                string `json:"name" gorm:"not null"`
 	Ip                  string `json:"ip" gorm:"null"`
+	WorkerPath          string `json:"path" gorm:"not null"`
+	ConnectStatus       string `json:"status"`
 	Username            string `json:"username" gorm:"null"`
 	Password            string `json:"password" gorm:"null"`
 	HasKafkaConnectOpen bool   `json:"available"`
