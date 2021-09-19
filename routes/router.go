@@ -42,5 +42,6 @@ func New() *gin.Engine {
 	router.GET("/workers", controllers.FindWorkers)
 	router.POST("/workers/:entityId/start", controllers.StartKafkaConnect)
 	router.POST("/workers/:entityId/stop", controllers.StopKafkaConnect)
+	router.GET("/worker/:entityId", controllers.FindWorker)
 	return router
 }

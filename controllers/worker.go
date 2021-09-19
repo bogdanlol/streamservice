@@ -88,3 +88,24 @@ func StartKafkaConnect(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": "worker started successfully"})
 }
+func FindWorker(c *gin.Context) {
+	StrId, isPresent := c.Params.Get("entityId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Id is needed "})
+		return
+	}
+	worker := &models.WorkerEntity{}
+	id, err := strconv.Atoi(StrId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Id is not int "})
+		return
+	}
+
+	if err := DB.First(&worker, id).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": worker})
+
+}
