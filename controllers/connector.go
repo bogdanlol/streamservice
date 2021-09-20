@@ -40,6 +40,7 @@ func FindConnectors(c *gin.Context) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			}
 			if response.StatusCode != 200 {
+				connectorsWithStatus = append(connectorsWithStatus, connector)
 				continue
 			}
 			responseData, err := ioutil.ReadAll(response.Body)
