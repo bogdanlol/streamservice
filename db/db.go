@@ -30,5 +30,6 @@ func AutoMigrate(db *gorm.DB) {
 	db.AutoMigrate(
 		&models.ConnectorEntity{},
 		&models.WorkerEntity{},
+		&models.UserEntity{},
 	)
 }
