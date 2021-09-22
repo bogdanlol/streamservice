@@ -82,7 +82,8 @@ func New() *gin.Engine {
 			return nil, jwt.ErrFailedAuthentication
 		},
 		Authorizator: func(data interface{}, c *gin.Context) bool {
-			if v, ok := data.(*models.UserEntity); ok && v.Username == "admin" {
+
+			if v, ok := data.(*models.UserEntity); ok && DB.Where("username=?", v.Username).Error == nil {
 				return true
 			}
 
@@ -126,23 +127,28 @@ func New() *gin.Engine {
 	}
 
 	router.Use(CORS())
+	auth := router.Group("/")
+
+	auth.Use(authMiddleware.MiddlewareFunc())
+	{
+		auth.GET("/workers", controllers.FindWorkers)
+		auth.GET("/connectors", controllers.FindConnectors)
+		auth.POST("/connectors", controllers.CreateConnector)
+		auth.GET("/connector-classes", controllers.GetConnectorClasses)
+		auth.GET("/convertors", controllers.GetConvertors)
+		auth.POST("/connectors/start/:entityId", controllers.PostConnector)
+		auth.GET("/connectors/:entityId", controllers.FindConnector)
+		auth.PUT("/connectors/:entityId", controllers.EditConnector)
+		auth.DELETE("/connectors/:entityId", controllers.RemoveConnector)
+		auth.POST("/connectors/stop/:entityName", controllers.StopConnector)
+		auth.POST("/connectors-plugins/upload", controllers.UploadConnectorPlugin)
+		auth.PUT("/connectors-validate", controllers.ValidateConnector)
+		auth.POST("/workers/:entityId/start", controllers.StartKafkaConnect)
+		auth.POST("/workers/:entityId/stop", controllers.StopKafkaConnect)
+		auth.GET("/worker/:entityId", controllers.FindWorker)
+		auth.POST("/user/create", controllers.CreateUser)
+	}
 	router.POST("/login", authMiddleware.LoginHandler)
 
-	router.GET("/connectors", controllers.FindConnectors)
-	router.POST("/connectors", controllers.CreateConnector)
-	router.GET("/connector-classes", controllers.GetConnectorClasses)
-	router.GET("/convertors", controllers.GetConvertors)
-	router.POST("/connectors/start/:entityId", controllers.PostConnector)
-	router.GET("/connectors/:entityId", controllers.FindConnector)
-	router.PUT("/connectors/:entityId", controllers.EditConnector)
-	router.DELETE("/connectors/:entityId", controllers.RemoveConnector)
-	router.POST("/connectors/stop/:entityName", controllers.StopConnector)
-	router.POST("/connectors-plugins/upload", controllers.UploadConnectorPlugin)
-	router.PUT("/connectors-validate", controllers.ValidateConnector)
-	router.GET("/workers", controllers.FindWorkers)
-	router.POST("/workers/:entityId/start", controllers.StartKafkaConnect)
-	router.POST("/workers/:entityId/stop", controllers.StopKafkaConnect)
-	router.GET("/worker/:entityId", controllers.FindWorker)
-	router.POST("/user/create", controllers.CreateUser)
 	return router
 }
