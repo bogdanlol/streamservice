@@ -26,6 +26,15 @@ var conf = config.NewConfig()
 func FindConnectors(c *gin.Context) {
 	var connectors []models.ConnectorEntity
 	var connectorsWithStatus []models.ConnectorEntity
+	var worker models.WorkerEntity
+	workerId, isPresent := c.Params.Get("workerId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
+	}
+	if err := DB.First(&worker, workerId).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
 	DB.Find(&connectors)
 	var _, isKafkaConnectOpenErr = http.Get(conf.KafkaEndpoint)
 	if connectors != nil && isKafkaConnectOpenErr == nil {
@@ -125,6 +134,14 @@ func RemoveConnector(c *gin.Context) {
 
 //get connector classes
 func GetConnectorClasses(c *gin.Context) {
+	var worker models.WorkerEntity
+	workerId, isPresent := c.Params.Get("workerId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
+	}
+	if err := DB.First(&worker, workerId).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
 	type connectorClass struct {
 		Class   string `json:"class"`
 		Type    string `json:"type"`
@@ -152,6 +169,14 @@ func GetConnectorClasses(c *gin.Context) {
 }
 
 func GetConvertors(c *gin.Context) {
+	var worker models.WorkerEntity
+	workerId, isPresent := c.Params.Get("workerId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
+	}
+	if err := DB.First(&worker, workerId).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
 	var convertors []string
 	convertors = append(convertors, "io.confluent.connect.avro.AvroConverter")
 	convertors = append(convertors, "io.confluent.connect.protobuf.ProtobufConverter")
@@ -163,6 +188,14 @@ func GetConvertors(c *gin.Context) {
 }
 
 func PostConnector(c *gin.Context) {
+	var worker models.WorkerEntity
+	workerId, isPresent := c.Params.Get("workerId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
+	}
+	if err := DB.First(&worker, workerId).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
 	id, isPresent := c.Params.Get("entityId")
 	if !isPresent {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
@@ -211,6 +244,14 @@ func PostConnector(c *gin.Context) {
 }
 
 func StopConnector(c *gin.Context) {
+	var worker models.WorkerEntity
+	workerId, isPresent := c.Params.Get("workerId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
+	}
+	if err := DB.First(&worker, workerId).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
 	client := &http.Client{}
 
 	name, isPresent := c.Params.Get("entityName")
@@ -234,6 +275,14 @@ func StopConnector(c *gin.Context) {
 }
 
 func UploadConnectorPlugin(c *gin.Context) {
+	var worker models.WorkerEntity
+	workerId, isPresent := c.Params.Get("workerId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
+	}
+	if err := DB.First(&worker, workerId).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, fmt.Sprintf("file err : %s", err.Error()))
@@ -283,6 +332,14 @@ func UploadConnectorPlugin(c *gin.Context) {
 }
 
 func ValidateConnector(c *gin.Context) {
+	var worker models.WorkerEntity
+	workerId, isPresent := c.Params.Get("workerId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
+	}
+	if err := DB.First(&worker, workerId).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
 	// Validate input
 	client := &http.Client{}
 
