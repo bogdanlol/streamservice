@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 )
 
@@ -143,7 +142,6 @@ func Unzip(src string, dest string) ([]string, error) {
 
 func GetCurrentlyLoggedinUser(c *gin.Context) (models.UserEntity, error) {
 	claims := jwt.ExtractClaims(c)
-	spew.Dump(claims)
 	Username := claims["id"].(string)
 	var user models.UserEntity
 	var err error
