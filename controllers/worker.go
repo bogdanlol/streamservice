@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strconv"
 	"streamingservice/models"
+	"streamingservice/utils"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -16,7 +17,12 @@ import (
 func FindWorkers(c *gin.Context) {
 	var workers []models.WorkerEntity
 	var workersWithStatus []models.WorkerEntity
-	DB.Find(&workers)
+	loggedInUser, err := utils.GetCurrentlyLoggedinUser(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+	}
+
+	DB.Where("team_id=?", loggedInUser.TeamId).Find(&workers)
 
 	for _, worker := range workers {
 

@@ -35,7 +35,12 @@ func FindConnectors(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 
-	DB.Find(&connectors)
+	loggedInUser, err := utils.GetCurrentlyLoggedinUser(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+	}
+
+	DB.Where("team_id=?", loggedInUser.TeamId).Find(&connectors)
 	var _, isKafkaConnectOpenErr = http.Get(conf.KafkaEndpoint)
 	if connectors != nil && isKafkaConnectOpenErr == nil {
 		type responseStatus struct {

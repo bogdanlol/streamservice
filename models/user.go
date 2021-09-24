@@ -9,9 +9,11 @@ import (
 
 type UserEntity struct {
 	gorm.Model
-	Username string `gorm:"not null"`
-	Password string `gorm:"not null"`
-	Admin    bool   `gorm:"default:false;not null"`
+	Username   string     `gorm:"not null"`
+	Password   string     `gorm:"not null"`
+	Admin      bool       `gorm:"default:false;not null"`
+	TeamId     int        `json:"teamId"`
+	TeamEntity TeamEntity `gorm:"foreignKey:TeamId"`
 }
 
 func (UserEntity) GetTableName() string {

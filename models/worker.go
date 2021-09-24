@@ -4,13 +4,15 @@ import "github.com/jinzhu/gorm"
 
 type WorkerEntity struct {
 	gorm.Model
-	Name          string `json:"name" gorm:"not null"`
-	Ip            string `json:"ip" gorm:"null"`
-	WorkerPath    string `json:"path" gorm:"not null"`
-	ConnectStatus string `json:"status"`
-	Username      string `json:"username" gorm:"null"`
-	Password      string `json:"password" gorm:"null"`
-	ConnectPort   uint   `json:"port" gorm:"default:8083;not null"`
+	Name          string     `json:"name" gorm:"not null"`
+	Ip            string     `json:"ip" gorm:"null"`
+	WorkerPath    string     `json:"path" gorm:"not null"`
+	ConnectStatus string     `json:"status"`
+	Username      string     `json:"username" gorm:"null"`
+	Password      string     `json:"password" gorm:"null"`
+	ConnectPort   uint       `json:"port" gorm:"default:8083;not null"`
+	TeamId        int        `json:"teamId"`
+	TeamEntity    TeamEntity `gorm:"foreignKey:TeamId"`
 }
 
 func (WorkerEntity) GetTableName() string {

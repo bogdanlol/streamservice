@@ -8,8 +8,16 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"streamingservice/db"
+	"streamingservice/models"
 	"strings"
+
+	jwt "github.com/appleboy/gin-jwt/v2"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/gin-gonic/gin"
 )
+
+var DB = db.New()
 
 func Untar(dst string, r io.Reader) error {
 
@@ -131,4 +139,16 @@ func Unzip(src string, dest string) ([]string, error) {
 		}
 	}
 	return filenames, nil
+}
+
+func GetCurrentlyLoggedinUser(c *gin.Context) (models.UserEntity, error) {
+	claims := jwt.ExtractClaims(c)
+	spew.Dump(claims)
+	Username := claims["id"].(string)
+	var user models.UserEntity
+	var err error
+	if err = DB.Where("username=?", Username).First(&user).Error; err != nil {
+		return user, err
+	}
+	return user, err
 }
