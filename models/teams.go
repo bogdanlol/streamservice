@@ -6,7 +6,7 @@ import (
 
 type TeamEntity struct {
 	gorm.Model
-	Name string `gorm:"not null"`
+	Name string `json:"name" gorm:"not null" `
 }
 
 func (TeamEntity) GetTableName() string {

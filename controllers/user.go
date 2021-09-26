@@ -34,3 +34,26 @@ func CreateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": input})
 
 }
+
+func FindUsers(c *gin.Context) {
+	var users []models.UserEntity
+
+	if err := DB.Find(&users).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	c.JSON(http.StatusOK, gin.H{"data": users})
+
+}
+func FindUser(c *gin.Context) {
+	var user *models.UserEntity
+	id, isPresent := c.Params.Get("entityId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such user"})
+	}
+
+	if err := DB.First(&user, id).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	c.JSON(http.StatusOK, gin.H{"data": user})
+
+}

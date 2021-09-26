@@ -148,6 +148,11 @@ func New() *gin.Engine {
 		auth.GET("/worker/:entityId", controllers.FindWorker)
 		auth.POST("/user/create", controllers.CreateUser)
 		auth.GET("/user", controllers.IsAdmin)
+		auth.GET("/users", controllers.FindUsers)
+		auth.GET("/user/:entityId", controllers.FindUser)
+		auth.GET("/teams", controllers.FindTeams)
+		auth.GET("/team/create", controllers.CreateTeam)
+		auth.GET("/team/:entityId", controllers.FindTeam)
 	}
 	router.POST("/login", authMiddleware.LoginHandler)
 
