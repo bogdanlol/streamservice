@@ -22,7 +22,7 @@ func FindWorkers(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 	}
 
-	DB.Where("team_id=?", loggedInUser.TeamId).Find(&workers)
+	DB.Where("team_id=?", loggedInUser.TeamId).Or("team_id IS NULL").Find(&workers)
 
 	for _, worker := range workers {
 

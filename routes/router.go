@@ -147,6 +147,7 @@ func New() *gin.Engine {
 		auth.POST("/workers/:entityId/stop", controllers.StopKafkaConnect)
 		auth.GET("/worker/:entityId", controllers.FindWorker)
 		auth.POST("/user/create", controllers.CreateUser)
+		auth.GET("/user", controllers.IsAdmin)
 	}
 	router.POST("/login", authMiddleware.LoginHandler)
 
