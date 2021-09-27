@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 	"streamingservice/models"
 
 	"github.com/gin-gonic/gin"
@@ -31,7 +32,7 @@ func FindTeams(c *gin.Context) {
 
 }
 func FindTeam(c *gin.Context) {
-	var team *models.TeamEntity
+	var team models.TeamEntity
 	id, isPresent := c.Params.Get("entityId")
 	if !isPresent {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no such team"})
@@ -41,5 +42,38 @@ func FindTeam(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 	c.JSON(http.StatusOK, gin.H{"data": team})
+
+}
+
+func RemoveTeam(c *gin.Context) {
+	id, isPresent := c.Params.Get("entityId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such team"})
+	}
+	DB.Delete(&models.TeamEntity{}, id)
+	c.JSON(http.StatusOK, gin.H{"data": "team has been deleted"})
+
+}
+func EditTeam(c *gin.Context) {
+	// Validate input
+	StrId, isPresent := c.Params.Get("entityId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such team"})
+	}
+	var input models.TeamEntity
+	id, err := strconv.Atoi(StrId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such team"})
+	}
+
+	DB.First(&input, id)
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	DB.Save(&input)
+
+	c.JSON(http.StatusOK, gin.H{"data": input})
 
 }

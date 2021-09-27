@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 	"streamingservice/models"
 	"streamingservice/utils"
 
@@ -45,7 +46,7 @@ func FindUsers(c *gin.Context) {
 
 }
 func FindUser(c *gin.Context) {
-	var user *models.UserEntity
+	var user models.UserEntity
 	id, isPresent := c.Params.Get("entityId")
 	if !isPresent {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no such user"})
@@ -55,5 +56,37 @@ func FindUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 	c.JSON(http.StatusOK, gin.H{"data": user})
+
+}
+func RemoveUser(c *gin.Context) {
+	id, isPresent := c.Params.Get("entityId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such user"})
+	}
+	DB.Delete(&models.UserEntity{}, id)
+	c.JSON(http.StatusOK, gin.H{"data": "user has been deleted"})
+
+}
+func EditUser(c *gin.Context) {
+	// Validate input
+	StrId, isPresent := c.Params.Get("entityId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such user"})
+	}
+	var input models.UserEntity
+	id, err := strconv.Atoi(StrId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such user"})
+	}
+
+	DB.First(&input, id)
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	DB.Save(&input)
+
+	c.JSON(http.StatusOK, gin.H{"data": input})
 
 }
