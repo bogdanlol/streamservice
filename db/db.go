@@ -28,9 +28,15 @@ func TestDB() *gorm.DB {
 
 func AutoMigrate(db *gorm.DB) {
 	db.AutoMigrate(
+
 		&models.ConnectorEntity{},
 		&models.WorkerEntity{},
 		&models.UserEntity{},
 		&models.TeamEntity{},
 	)
+	admin := models.UserEntity{Username: "admin", Admin: true}
+	pass, _ := admin.HashPassword("pass123")
+	admin.Password = pass
+	_ = db.FirstOrCreate(&admin).Error
+
 }
