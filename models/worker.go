@@ -13,6 +13,9 @@ type WorkerEntity struct {
 	ConnectPort   uint       `json:"port" gorm:"default:8083;not null"`
 	TeamId        int        `json:"teamId"`
 	TeamEntity    TeamEntity `gorm:"foreignKey:TeamId"`
+
+	Environment string `json:"environment" gorm:"default:'test';not null"`
+	Type        string `json:"type" gorm:"default:'worker';not null"`
 }
 
 func (WorkerEntity) GetTableName() string {

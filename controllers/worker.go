@@ -21,8 +21,11 @@ func FindWorkers(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 	}
-
-	DB.Where("team_id=?", loggedInUser.TeamId).Or("team_id IS NULL").Find(&workers)
+	if !loggedInUser.Admin {
+		DB.Where("team_id=?", loggedInUser.TeamId).Or("team_id IS NULL").Find(&workers)
+	} else {
+		DB.Find(&workers)
+	}
 
 	for _, worker := range workers {
 
@@ -40,6 +43,9 @@ func FindWorkers(c *gin.Context) {
 
 			}
 			workersWithStatus = append(workersWithStatus, worker)
+		} else {
+			worker.ConnectStatus = "STOPPED"
+			workersWithStatus = append(workersWithStatus, worker)
 		}
 	}
 
@@ -49,6 +55,26 @@ func FindWorkers(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, gin.H{"data": workers})
 	}
+
+}
+func CreateWorker(c *gin.Context) {
+	// Validate input
+	loggedInUser, err := utils.GetCurrentlyLoggedinUser(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+	}
+
+	var input models.WorkerEntity
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if loggedInUser.Admin != false {
+		input.TeamId = loggedInUser.TeamId
+	}
+	DB.Create(&input)
+
+	c.JSON(http.StatusOK, gin.H{"data": input})
 
 }
 func StopKafkaConnect(c *gin.Context) {

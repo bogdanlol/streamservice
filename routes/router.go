@@ -132,6 +132,7 @@ func New() *gin.Engine {
 	auth.Use(authMiddleware.MiddlewareFunc())
 	{
 		auth.GET("/workers", controllers.FindWorkers)
+		auth.POST("/worker", controllers.CreateWorker)
 		auth.GET("/:workerId/connectors", controllers.FindConnectors)
 		auth.POST("/connectors", controllers.CreateConnector)
 		auth.GET("/:workerId/connector-classes", controllers.GetConnectorClasses)
