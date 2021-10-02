@@ -39,4 +39,6 @@ func AutoMigrate(db *gorm.DB) {
 	admin.Password = pass
 	_ = db.FirstOrCreate(&admin).Error
 
+	localhost := models.WorkerEntity{Name: "localhost", Ip: "127.0.0.1", WorkerPath: "/opt/kafka/confluent-6.1.0", ConnectPort: 8083}
+	_ = db.FirstOrCreate(&localhost).Error
 }
