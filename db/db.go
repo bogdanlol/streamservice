@@ -9,7 +9,7 @@ import (
 )
 
 func New() *gorm.DB {
-	db, err := gorm.Open("mysql", "root:bogdanlol3142@/streamservice?charset=utf8&parseTime=True&loc=Local")
+	db, err := gorm.Open("mysql", "root:pass@/streamservice?charset=utf8&parseTime=True&loc=Local")
 	if err != nil {
 		fmt.Println("eror during connection to the database :", err)
 	}
@@ -18,7 +18,7 @@ func New() *gorm.DB {
 	return db
 }
 func TestDB() *gorm.DB {
-	db, err := gorm.Open("mysql", "root:bogdanlol3142@/streamservice?charset=utf8&parseTime=True&loc=Local")
+	db, err := gorm.Open("mysql", "root:pass@/streamservice?charset=utf8&parseTime=True&loc=Local")
 	if err != nil {
 		fmt.Println("eror during connection to the database :", err)
 	}
@@ -39,6 +39,4 @@ func AutoMigrate(db *gorm.DB) {
 	admin.Password = pass
 	_ = db.FirstOrCreate(&admin).Error
 
-	localhost := models.WorkerEntity{Name: "localhost", Ip: "127.0.0.1", WorkerPath: "/opt/kafka/confluent-6.1.0", ConnectPort: 8083}
-	_ = db.FirstOrCreate(&localhost).Error
 }
