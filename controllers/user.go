@@ -9,6 +9,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func GetCurrentUser(c *gin.Context) {
+	loggedInUser, err := utils.GetCurrentlyLoggedinUser(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"user": loggedInUser})
+}
 func IsAdmin(c *gin.Context) {
 	loggedInUser, err := utils.GetCurrentlyLoggedinUser(c)
 	if err != nil {

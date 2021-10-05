@@ -158,6 +158,7 @@ func New() *gin.Engine {
 		auth.DELETE("/teams/:entityId", controllers.RemoveTeam)
 		auth.PUT("/user/:entityId", controllers.EditUser)
 		auth.PUT("/team/:entityId", controllers.EditTeam)
+		auth.GET("/user/current", controllers.GetCurrentUser)
 
 	}
 	router.POST("/login", authMiddleware.LoginHandler)
