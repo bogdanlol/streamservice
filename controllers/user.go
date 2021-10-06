@@ -7,6 +7,7 @@ import (
 	"streamingservice/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 )
 
 func GetCurrentUser(c *gin.Context) {
@@ -14,8 +15,15 @@ func GetCurrentUser(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 	}
+	var TO models.TeamOwnerEntity
+	teamOwner := false
+	if err := DB.First(&TO, "user_id=?", loggedInUser.ID).Error; err != gorm.ErrRecordNotFound {
+		teamOwner = true
+	}
+	var team models.TeamEntity
+	DB.First(&team, "id=?", loggedInUser.TeamId)
+	c.JSON(http.StatusOK, gin.H{"user": loggedInUser, "teamOwner": teamOwner, "team": team})
 
-	c.JSON(http.StatusOK, gin.H{"user": loggedInUser})
 }
 func IsAdmin(c *gin.Context) {
 	loggedInUser, err := utils.GetCurrentlyLoggedinUser(c)
@@ -43,7 +51,18 @@ func CreateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": input})
 
 }
+func FindUsersByTeam(c *gin.Context) {
+	var users []models.UserEntity
+	id, isPresent := c.Params.Get("entityId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such user"})
+	}
+	if err := DB.Find(&users, "team_id=?", id).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	c.JSON(http.StatusOK, gin.H{"data": users})
 
+}
 func FindUsers(c *gin.Context) {
 	var users []models.UserEntity
 

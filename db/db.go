@@ -33,6 +33,7 @@ func AutoMigrate(db *gorm.DB) {
 		&models.WorkerEntity{},
 		&models.UserEntity{},
 		&models.TeamEntity{},
+		&models.TeamOwnerEntity{},
 	)
 	admin := models.UserEntity{Username: "admin", Admin: true}
 	pass, _ := admin.HashPassword("pass123")

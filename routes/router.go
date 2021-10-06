@@ -151,6 +151,7 @@ func New() *gin.Engine {
 		auth.GET("/user", controllers.IsAdmin)
 		auth.GET("/users", controllers.FindUsers)
 		auth.GET("/user/:entityId", controllers.FindUser)
+		auth.GET("/user/team/:entityId", controllers.FindUsersByTeam)
 		auth.GET("/teams", controllers.FindTeams)
 		auth.POST("/team/create", controllers.CreateTeam)
 		auth.GET("/team/:entityId", controllers.FindTeam)
