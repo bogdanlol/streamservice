@@ -149,8 +149,10 @@ func FindWorker(c *gin.Context) {
 		WorkerProperties string `json:"WorkerProperties,omitempty"`
 	}
 	resp := respStr{}
-	if worker.Name == "localhost" {
-		resp.Worker = *worker
+	resp.Worker = *worker
+	_, connectionError := http.Get(conf.KafkaEndpoint + "connectors/")
+
+	if worker.Name == "localhost" && connectionError == nil {
 		//scan for worker properties
 		wpop, err := ioutil.ReadFile(worker.WorkerPath + "/bin/worker.properties")
 		if err != nil {
@@ -213,6 +215,7 @@ func FindWorker(c *gin.Context) {
 			}
 
 		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"data": resp})
 	}
-	c.JSON(http.StatusOK, gin.H{"data": resp})
 }
