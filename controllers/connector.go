@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"streamingservice/config"
 	"streamingservice/db"
 	"streamingservice/models"
@@ -353,12 +354,29 @@ func ValidateConnector(c *gin.Context) {
 	client := &http.Client{}
 
 	var input models.ConnectorEntity
+
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	// c.JSON(http.StatusOK, gin.H{"data": conn})
-	jsonToSend, _ := json.Marshal(input)
+	m := map[string]interface{}{}
+
+	v := reflect.ValueOf(input)
+	typeOfS := v.Type()
+	ignoredFields := []string{"CustomFields", "TeamEntity", "Model", "Status", "Type", "TeamId"}
+	for i := 0; i < v.NumField(); i++ {
+		if !utils.StringInSlice(typeOfS.Field(i).Name, ignoredFields) {
+			m[typeOfS.Field(i).Tag.Get("json")] = v.Field(i).Interface()
+		}
+	}
+	if input.CustomFields != nil {
+		for _, v := range input.CustomFields {
+			m[v.Field] = v.Value
+		}
+	}
+
+	jsonToSend, _ := json.Marshal(m)
 
 	req, err := http.NewRequest(http.MethodPut, conf.KafkaEndpoint+"connector-plugins/"+input.ConnectorClass+"/config/validate/", bytes.NewBuffer(jsonToSend))
 	if err != nil {

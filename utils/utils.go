@@ -150,3 +150,11 @@ func GetCurrentlyLoggedinUser(c *gin.Context) (models.UserEntity, error) {
 	}
 	return user, err
 }
+func StringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
