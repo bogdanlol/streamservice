@@ -103,6 +103,7 @@ func FindConnector(c *gin.Context) {
 func CreateConnector(c *gin.Context) {
 	// Validate input
 	var input models.ConnectorEntity
+
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -370,11 +371,11 @@ func ValidateConnector(c *gin.Context) {
 			m[typeOfS.Field(i).Tag.Get("json")] = v.Field(i).Interface()
 		}
 	}
-	if input.CustomFields != nil {
-		for _, v := range input.CustomFields {
-			m[v.Field] = v.Value
-		}
-	}
+	// if input.CustomFields != "" {
+	// 	// for _, v := range input.CustomFields {
+	// 	// 	m[v.Field] = v.Value
+	// 	// }
+	// }
 
 	jsonToSend, _ := json.Marshal(m)
 
