@@ -131,35 +131,42 @@ func New() *gin.Engine {
 
 	auth.Use(authMiddleware.MiddlewareFunc())
 	{
+		//worker routes
 		auth.GET("/workers", controllers.FindWorkers)
+		auth.GET("/worker/:entityId", controllers.FindWorker)
 		auth.POST("/worker", controllers.CreateWorker)
+		auth.POST("/workers/:entityId/start", controllers.StartKafkaConnect)
+		auth.POST("/:workerId/connectors-plugins/upload", controllers.UploadConnectorPlugin)
+		auth.POST("/workers/:entityId/stop", controllers.StopKafkaConnect)
+
+		//user routes
+		auth.GET("/user/current", controllers.GetCurrentUser)
+		auth.GET("/user/:entityId", controllers.FindUser)
+		auth.GET("/users", controllers.FindUsers)
+		auth.GET("/user", controllers.IsAdmin)
+		auth.GET("/user/team/:entityId", controllers.FindUsersByTeam)
+		auth.POST("/user/create", controllers.CreateUser)
+		auth.PUT("/user/:entityId", controllers.EditUser)
+		auth.DELETE("/users/:entityId", controllers.RemoveUser)
+
+		//connectors routes
 		auth.GET("/:workerId/connectors", controllers.FindConnectors)
-		auth.POST("/connectors", controllers.CreateConnector)
+		auth.GET("/connectors/:entityId", controllers.FindConnector)
 		auth.GET("/:workerId/connector-classes", controllers.GetConnectorClasses)
 		auth.GET("/:workerId/convertors", controllers.GetConvertors)
+		auth.POST("/connectors", controllers.CreateConnector)
 		auth.POST("/:workerId/connectors/start/:entityId", controllers.PostConnector)
-		auth.GET("/connectors/:entityId", controllers.FindConnector)
-		auth.PUT("/connectors/:entityId", controllers.EditConnector)
-		auth.DELETE("/connectors/:entityId", controllers.RemoveConnector)
 		auth.POST("/:workerId/connectors/stop/:entityName", controllers.StopConnector)
-		auth.POST("/:workerId/connectors-plugins/upload", controllers.UploadConnectorPlugin)
+		auth.PUT("/connectors/:entityId", controllers.EditConnector)
 		auth.PUT("/:workerId/connectors-validate", controllers.ValidateConnector)
-		auth.POST("/workers/:entityId/start", controllers.StartKafkaConnect)
-		auth.POST("/workers/:entityId/stop", controllers.StopKafkaConnect)
-		auth.GET("/worker/:entityId", controllers.FindWorker)
-		auth.POST("/user/create", controllers.CreateUser)
-		auth.GET("/user", controllers.IsAdmin)
-		auth.GET("/users", controllers.FindUsers)
-		auth.GET("/user/:entityId", controllers.FindUser)
-		auth.GET("/user/team/:entityId", controllers.FindUsersByTeam)
+		auth.DELETE("/connectors/:entityId", controllers.RemoveConnector)
+
+		//team routes
 		auth.GET("/teams", controllers.FindTeams)
-		auth.POST("/team/create", controllers.CreateTeam)
 		auth.GET("/team/:entityId", controllers.FindTeam)
-		auth.DELETE("/users/:entityId", controllers.RemoveUser)
-		auth.DELETE("/teams/:entityId", controllers.RemoveTeam)
-		auth.PUT("/user/:entityId", controllers.EditUser)
+		auth.POST("/team/create", controllers.CreateTeam)
 		auth.PUT("/team/:entityId", controllers.EditTeam)
-		auth.GET("/user/current", controllers.GetCurrentUser)
+		auth.DELETE("/teams/:entityId", controllers.RemoveTeam)
 
 	}
 	router.POST("/login", authMiddleware.LoginHandler)

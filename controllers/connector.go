@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strconv"
 	"streamingservice/config"
 	"streamingservice/db"
 	"streamingservice/models"
@@ -86,7 +87,7 @@ func FindConnectors(c *gin.Context) {
 
 }
 func FindConnector(c *gin.Context) {
-	var connector *models.ConnectorEntity
+	var connector models.ConnectorEntity
 	id, isPresent := c.Params.Get("entityId")
 	if !isPresent {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
@@ -116,13 +117,17 @@ func CreateConnector(c *gin.Context) {
 }
 func EditConnector(c *gin.Context) {
 	// Validate input
-	_, isPresent := c.Params.Get("entityId")
+	StrId, isPresent := c.Params.Get("entityId")
 	if !isPresent {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
 	}
 	var input models.ConnectorEntity
+	id, err := strconv.Atoi(StrId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
+	}
 
-	DB.First(&input)
+	DB.First(&input, id)
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -221,7 +226,7 @@ func PostConnector(c *gin.Context) {
 		TasksMax       uint16 `json:"tasks.max"`
 		KeyConverter   string `json:"key.converter,omitempty"`
 		ValueConverter string `json:"value.converter,omitempty"`
-		Topics         string `json:"topics"`
+		Topic          string `json:"topic"`
 		File           string `json:"file,omitempty"`
 	}
 	type KafkaConnect struct {
@@ -233,7 +238,7 @@ func PostConnector(c *gin.Context) {
 		TasksMax:       connector.TasksMax,
 		KeyConverter:   connector.KeyConverter,
 		ValueConverter: connector.ValueConverter,
-		Topics:         connector.Topics,
+		Topic:          connector.Topic,
 	}
 	conn := KafkaConnect{
 		Name:   connector.Name,
@@ -371,11 +376,21 @@ func ValidateConnector(c *gin.Context) {
 			m[typeOfS.Field(i).Tag.Get("json")] = v.Field(i).Interface()
 		}
 	}
-	// if input.CustomFields != "" {
-	// 	// for _, v := range input.CustomFields {
-	// 	// 	m[v.Field] = v.Value
-	// 	// }
-	// }
+	type customF struct {
+		Field string `json:"field"`
+		Value string `json:"value"`
+	}
+	if input.CustomFields != nil {
+		var data []customF
+		err := json.Unmarshal(input.CustomFields, &data)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+
+		for _, v := range data {
+			m[v.Field] = v.Value
+		}
+	}
 
 	jsonToSend, _ := json.Marshal(m)
 
