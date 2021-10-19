@@ -218,4 +218,5 @@ func FindWorker(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, gin.H{"data": resp})
 	}
+	c.JSON(http.StatusOK, gin.H{"data": resp})
 }

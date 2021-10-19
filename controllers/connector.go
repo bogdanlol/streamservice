@@ -16,6 +16,7 @@ import (
 	"streamingservice/models"
 	"streamingservice/utils"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 	"github.com/h2non/filetype"
 )
@@ -109,7 +110,6 @@ func CreateConnector(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
 	DB.Create(&input)
 
 	c.JSON(http.StatusOK, gin.H{"data": input})
@@ -221,32 +221,49 @@ func PostConnector(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
-	type Config struct {
-		ConnectorClass string `json:"connector.class"`
-		TasksMax       uint16 `json:"tasks.max"`
-		KeyConverter   string `json:"key.converter,omitempty"`
-		ValueConverter string `json:"value.converter,omitempty"`
-		Topic          string `json:"topic"`
-		File           string `json:"file,omitempty"`
-	}
 	type KafkaConnect struct {
-		Name   string  `json:"name"`
-		Config *Config `json:"config"`
+		Name   string      `json:"name"`
+		Config interface{} `json:"config"`
 	}
-	configuration := Config{
-		ConnectorClass: connector.ConnectorClass,
-		TasksMax:       connector.TasksMax,
-		KeyConverter:   connector.KeyConverter,
-		ValueConverter: connector.ValueConverter,
-		Topic:          connector.Topic,
+
+	m := map[string]interface{}{}
+
+	v := reflect.ValueOf(connector)
+	typeOfS := v.Type()
+	ignoredFields := []string{"CustomFields", "TeamEntity", "Model", "Status", "Type", "TeamId"}
+	for i := 0; i < v.NumField(); i++ {
+		if !utils.StringInSlice(typeOfS.Field(i).Name, ignoredFields) {
+			m[typeOfS.Field(i).Tag.Get("json")] = v.Field(i).Interface()
+		}
+	}
+	type customF struct {
+		Field string `json:"field"`
+		Value string `json:"value"`
+	}
+	if connector.CustomFields != nil {
+		var data []customF
+		err := json.Unmarshal(connector.CustomFields, &data)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+
+		for _, v := range data {
+			if v.Field != "" && v.Value != "" {
+				m[v.Field] = v.Value
+			}
+		}
 	}
 	conn := KafkaConnect{
 		Name:   connector.Name,
-		Config: &configuration,
+		Config: &m,
 	}
 
 	// c.JSON(http.StatusOK, gin.H{"data": conn})
+
+	spew.Dump(conn)
+	fmt.Println("------------")
 	jsonToSend, _ := json.Marshal(conn)
+	spew.Dump(jsonToSend)
 	resp, err := http.Post(conf.KafkaEndpoint+"connectors", "application/json", bytes.NewBuffer(jsonToSend))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

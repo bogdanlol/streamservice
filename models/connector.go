@@ -9,7 +9,7 @@ type ConnectorEntity struct {
 	TasksMax       uint16     `json:"tasks.max" gorm:"not null"`
 	KeyConverter   string     `json:"key.converter" gorm:"null"`
 	ValueConverter string     `json:"value.converter" gorm:"null"`
-	Topic          string     `json:"topic" gorm:"not null"`
+	Topic          string     `json:"topics" gorm:"not null"`
 	File           string     `json:"file" gorm:"null"`
 	Type           string     `json:"type" gorm:"null"`
 	Status         string     `json:"status" gorm:"null"`
