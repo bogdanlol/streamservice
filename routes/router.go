@@ -168,6 +168,9 @@ func New() *gin.Engine {
 		auth.PUT("/team/:entityId", controllers.EditTeam)
 		auth.DELETE("/teams/:entityId", controllers.RemoveTeam)
 
+		//stream factory
+		auth.POST("/stream-factory/upload", controllers.UploadConfigsSF)
+
 	}
 	router.POST("/login", authMiddleware.LoginHandler)
 
