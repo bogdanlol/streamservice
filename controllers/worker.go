@@ -69,7 +69,7 @@ func CreateWorker(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if loggedInUser.Admin != false {
+	if loggedInUser.Admin {
 		input.TeamId = loggedInUser.TeamId
 	}
 	DB.Create(&input)

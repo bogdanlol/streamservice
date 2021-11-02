@@ -1,0 +1,8 @@
+avro
+pandas
+xlrd==1.2.0
+requests
+fastavro
+openpyxl
+paramiko
+pytest==4.0.0
