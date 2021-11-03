@@ -220,3 +220,26 @@ func FindWorker(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"data": resp})
 }
+func EditWorker(c *gin.Context) {
+	// Validate input
+	StrId, isPresent := c.Params.Get("entityId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such worker"})
+	}
+	var input models.WorkerEntity
+	id, err := strconv.Atoi(StrId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such worker"})
+	}
+
+	DB.First(&input, id)
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	DB.Save(&input)
+
+	c.JSON(http.StatusOK, gin.H{"data": input})
+
+}

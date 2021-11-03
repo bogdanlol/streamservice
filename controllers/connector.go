@@ -258,10 +258,6 @@ func PostConnector(c *gin.Context) {
 		Config: &m,
 	}
 
-	// c.JSON(http.StatusOK, gin.H{"data": conn})
-
-	spew.Dump(conn)
-	fmt.Println("------------")
 	jsonToSend, _ := json.Marshal(conn)
 	spew.Dump(jsonToSend)
 	resp, err := http.Post(conf.KafkaEndpoint+"connectors", "application/json", bytes.NewBuffer(jsonToSend))

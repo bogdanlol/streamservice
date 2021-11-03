@@ -138,6 +138,7 @@ func New() *gin.Engine {
 		auth.POST("/workers/:entityId/start", controllers.StartKafkaConnect)
 		auth.POST("/:workerId/connectors-plugins/upload", controllers.UploadConnectorPlugin)
 		auth.POST("/workers/:entityId/stop", controllers.StopKafkaConnect)
+		auth.PUT("/worker/:entityId", controllers.EditWorker)
 
 		//user routes
 		auth.GET("/user/current", controllers.GetCurrentUser)
