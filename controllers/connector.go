@@ -16,7 +16,6 @@ import (
 	"streamingservice/models"
 	"streamingservice/utils"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 	"github.com/h2non/filetype"
 )
@@ -259,7 +258,6 @@ func PostConnector(c *gin.Context) {
 	}
 
 	jsonToSend, _ := json.Marshal(conn)
-	spew.Dump(jsonToSend)
 	resp, err := http.Post(conf.KafkaEndpoint+"connectors", "application/json", bytes.NewBuffer(jsonToSend))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -270,6 +268,89 @@ func PostConnector(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": responseData})
+}
+
+func PostConnectors(c *gin.Context) {
+	var worker models.WorkerEntity
+	workerId, isPresent := c.Params.Get("workerId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
+	}
+	if err := DB.First(&worker, workerId).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	type conns struct {
+		Connectors []int `json:"connectors"`
+	}
+	var input conns
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	var Response []interface{}
+
+	for _, id := range input.Connectors {
+
+		var connector models.ConnectorEntity
+		err := DB.First(&connector, id).Error
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		type KafkaConnect struct {
+			Name   string      `json:"name"`
+			Config interface{} `json:"config"`
+		}
+
+		m := map[string]interface{}{}
+
+		v := reflect.ValueOf(connector)
+		typeOfS := v.Type()
+		ignoredFields := []string{"CustomFields", "TeamEntity", "Model", "Status", "Type", "TeamId"}
+		for i := 0; i < v.NumField(); i++ {
+			if !utils.StringInSlice(typeOfS.Field(i).Name, ignoredFields) {
+				m[typeOfS.Field(i).Tag.Get("json")] = v.Field(i).Interface()
+			}
+		}
+		type customF struct {
+			Field string `json:"field"`
+			Value string `json:"value"`
+		}
+		if connector.CustomFields != nil {
+			var data []customF
+			err := json.Unmarshal(connector.CustomFields, &data)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				continue
+			}
+
+			for _, v := range data {
+				if v.Field != "" && v.Value != "" {
+					m[v.Field] = v.Value
+				}
+			}
+		}
+		conn := KafkaConnect{
+			Name:   connector.Name,
+			Config: &m,
+		}
+
+		jsonToSend, _ := json.Marshal(conn)
+		resp, err := http.Post(conf.KafkaEndpoint+"connectors", "application/json", bytes.NewBuffer(jsonToSend))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			continue
+		}
+		responseData, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			continue
+		}
+
+		Response = append(Response, responseData)
+
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": Response})
 }
 
 func StopConnector(c *gin.Context) {
@@ -422,7 +503,9 @@ func ValidateConnector(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 	type validateResponse struct {
-		ErrorCount int `json:"error_count"`
+		ErrorCode  int    `json:"error_code"`
+		Message    string `json:"message"`
+		ErrorCount int    `json:"error_count"`
 		Configs    []struct {
 			Value struct {
 				Name   string   `json:"name"`
@@ -433,9 +516,14 @@ func ValidateConnector(c *gin.Context) {
 
 	var valResp validateResponse
 	var validationErrors []string
+
 	err = json.Unmarshal(responseData, &valResp)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	if valResp.ErrorCode == 500 {
+		c.JSON(http.StatusOK, gin.H{"errors": valResp.Message})
+		return
 	}
 	if valResp.ErrorCount != 0 {
 		for _, conf := range valResp.Configs {

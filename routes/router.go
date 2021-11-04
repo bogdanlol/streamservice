@@ -157,6 +157,7 @@ func New() *gin.Engine {
 		auth.GET("/:workerId/convertors", controllers.GetConvertors)
 		auth.POST("/connectors", controllers.CreateConnector)
 		auth.POST("/:workerId/connectors/start/:entityId", controllers.PostConnector)
+		auth.POST("/:workerId/connectors/start/multiple", controllers.PostConnectors)
 		auth.POST("/:workerId/connectors/stop/:entityName", controllers.StopConnector)
 		auth.PUT("/connectors/:entityId", controllers.EditConnector)
 		auth.PUT("/:workerId/connectors-validate", controllers.ValidateConnector)
