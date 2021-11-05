@@ -384,6 +384,41 @@ func StopConnector(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
+func StopConnectors(c *gin.Context) {
+	var worker models.WorkerEntity
+	workerId, isPresent := c.Params.Get("workerId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
+	}
+	if err := DB.First(&worker, workerId).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	client := &http.Client{}
+	type conns struct {
+		Connectors []string `json:"connectors"`
+	}
+	var input conns
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	for _, name := range input.Connectors {
+		// c.JSON(http.StatusOK, gin.H{"data": conn})
+		req, err := http.NewRequest(http.MethodDelete, conf.KafkaEndpoint+"connectors/"+name, nil)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		defer resp.Body.Close()
+	}
+	c.JSON(http.StatusOK, gin.H{})
+}
+
 func UploadConnectorPlugin(c *gin.Context) {
 	var worker models.WorkerEntity
 	workerId, isPresent := c.Params.Get("workerId")

@@ -159,6 +159,7 @@ func New() *gin.Engine {
 		auth.POST("/:workerId/connectors/start/:entityId", controllers.PostConnector)
 		auth.POST("/:workerId/connectors/start/multiple", controllers.PostConnectors)
 		auth.POST("/:workerId/connectors/stop/:entityName", controllers.StopConnector)
+		auth.POST("/:workerId/connectors/stopMultiple", controllers.StopConnectors)
 		auth.PUT("/connectors/:entityId", controllers.EditConnector)
 		auth.PUT("/:workerId/connectors-validate", controllers.ValidateConnector)
 		auth.DELETE("/connectors/:entityId", controllers.RemoveConnector)
