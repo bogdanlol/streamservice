@@ -29,6 +29,7 @@ func FindConnectors(c *gin.Context) {
 	var connectors []models.ConnectorEntity
 	var connectorsWithStatus []models.ConnectorEntity
 	var worker models.WorkerEntity
+
 	workerId, isPresent := c.Params.Get("workerId")
 	if !isPresent {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
@@ -46,6 +47,7 @@ func FindConnectors(c *gin.Context) {
 	} else {
 		DB.Where("team_id=?", loggedInUser.TeamId).Find(&connectors)
 	}
+	endpoint, port := utils.GetEndpointAndPort(worker.Name, worker.ConnectPort)
 
 	var _, isKafkaConnectOpenErr = http.Get(conf.KafkaEndpoint)
 	if connectors != nil && isKafkaConnectOpenErr == nil {
@@ -55,10 +57,19 @@ func FindConnectors(c *gin.Context) {
 			} `json:"connector"`
 		}
 		for _, connector := range connectors {
-			response, err := http.Get(conf.KafkaEndpoint + "connectors/" + connector.Name + "/status")
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			var response *http.Response
+			if endpoint == conf.SshRelayApi {
+				response, err = http.Get(endpoint + "api/" + worker.Name + "/" + port + connector.Name + "/status")
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				}
+			} else {
+				response, err = http.Get(endpoint + "connectors/" + connector.Name + "/status")
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				}
 			}
+
 			if response.StatusCode != 200 {
 				connectorsWithStatus = append(connectorsWithStatus, connector)
 				continue
@@ -156,7 +167,11 @@ func GetConnectorClasses(c *gin.Context) {
 	}
 	if err := DB.First(&worker, workerId).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
+	var response *http.Response
+	var err error
+	endpoint, port := utils.GetEndpointAndPort(worker.Name, worker.ConnectPort)
 	type connectorClass struct {
 		Class   string `json:"class"`
 		Type    string `json:"type"`
@@ -164,12 +179,19 @@ func GetConnectorClasses(c *gin.Context) {
 	}
 	var conn []connectorClass
 
-	response, err := http.Get(conf.KafkaEndpoint + "connector-plugins")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	if endpoint == conf.SshRelayApi {
+		response, err = http.Get(endpoint + "api/" + worker.Name + "/" + port + "/connector-plugins")
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+	} else {
+		response, err = http.Get(endpoint + "connector-plugins")
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 	}
-
 	responseData, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -211,14 +233,18 @@ func PostConnector(c *gin.Context) {
 	if err := DB.First(&worker, workerId).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
+	var response *http.Response
+	var err error
+	endpoint, port := utils.GetEndpointAndPort(worker.Name, worker.ConnectPort)
 	id, isPresent := c.Params.Get("entityId")
 	if !isPresent {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
 	}
 	var connector models.ConnectorEntity
-	err := DB.First(&connector, id).Error
+	err = DB.First(&connector, id).Error
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 	type KafkaConnect struct {
 		Name   string      `json:"name"`
@@ -258,11 +284,20 @@ func PostConnector(c *gin.Context) {
 	}
 
 	jsonToSend, _ := json.Marshal(conn)
-	resp, err := http.Post(conf.KafkaEndpoint+"connectors", "application/json", bytes.NewBuffer(jsonToSend))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if endpoint == conf.SshRelayApi {
+		response, err = http.Post(endpoint+"api/"+worker.Name+"/"+port+"/"+"connectors", "application/json", bytes.NewBuffer(jsonToSend))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+	} else {
+		response, err = http.Post(endpoint+"connectors", "application/json", bytes.NewBuffer(jsonToSend))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 	}
-	responseData, err := ioutil.ReadAll(resp.Body)
+	responseData, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
@@ -279,6 +314,9 @@ func PostConnectors(c *gin.Context) {
 	if err := DB.First(&worker, workerId).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
+	var response *http.Response
+	var err error
+	endpoint, port := utils.GetEndpointAndPort(worker.Name, worker.ConnectPort)
 	type conns struct {
 		Connectors []int `json:"connectors"`
 	}
@@ -292,7 +330,7 @@ func PostConnectors(c *gin.Context) {
 	for _, id := range input.Connectors {
 
 		var connector models.ConnectorEntity
-		err := DB.First(&connector, id).Error
+		err = DB.First(&connector, id).Error
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
@@ -335,12 +373,20 @@ func PostConnectors(c *gin.Context) {
 		}
 
 		jsonToSend, _ := json.Marshal(conn)
-		resp, err := http.Post(conf.KafkaEndpoint+"connectors", "application/json", bytes.NewBuffer(jsonToSend))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			continue
+		if endpoint == conf.SshRelayApi {
+			response, err = http.Post(endpoint+"api/"+worker.Name+"/"+port+"/"+"connectors", "application/json", bytes.NewBuffer(jsonToSend))
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+		} else {
+			response, err = http.Post(endpoint+"connectors", "application/json", bytes.NewBuffer(jsonToSend))
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
 		}
-		responseData, err := ioutil.ReadAll(resp.Body)
+		responseData, err := ioutil.ReadAll(response.Body)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			continue
@@ -363,16 +409,26 @@ func StopConnector(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 	client := &http.Client{}
-
+	var req *http.Request
+	var err error
+	endpoint, port := utils.GetEndpointAndPort(worker.Name, worker.ConnectPort)
 	name, isPresent := c.Params.Get("entityName")
 	if !isPresent {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no such connector"})
 	}
 
 	// c.JSON(http.StatusOK, gin.H{"data": conn})
-	req, err := http.NewRequest(http.MethodDelete, conf.KafkaEndpoint+"connectors/"+name, nil)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if endpoint == conf.SshRelayApi {
+		req, err = http.NewRequest(http.MethodDelete, endpoint+"api/"+worker.Name+"/"+port+"/connectors/"+name, nil)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+	} else {
+		req, err = http.NewRequest(http.MethodDelete, endpoint+"connectors/"+name, nil)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -393,6 +449,9 @@ func StopConnectors(c *gin.Context) {
 	if err := DB.First(&worker, workerId).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
+	var req *http.Request
+	var err error
+	endpoint, port := utils.GetEndpointAndPort(worker.Name, worker.ConnectPort)
 	client := &http.Client{}
 	type conns struct {
 		Connectors []string `json:"connectors"`
@@ -405,9 +464,18 @@ func StopConnectors(c *gin.Context) {
 
 	for _, name := range input.Connectors {
 		// c.JSON(http.StatusOK, gin.H{"data": conn})
-		req, err := http.NewRequest(http.MethodDelete, conf.KafkaEndpoint+"connectors/"+name, nil)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+		if endpoint == conf.SshRelayApi {
+			req, err = http.NewRequest(http.MethodDelete, endpoint+"api/"+worker.Name+"/"+port+"/connectors/"+name, nil)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+		} else {
+			req, err = http.NewRequest(http.MethodDelete, endpoint+"connectors/"+name, nil)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			}
 		}
 		resp, err := client.Do(req)
 		if err != nil {
@@ -485,6 +553,9 @@ func ValidateConnector(c *gin.Context) {
 	if err := DB.First(&worker, workerId).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
+	var req *http.Request
+	var err error
+	endpoint, port := utils.GetEndpointAndPort(worker.Name, worker.ConnectPort)
 	// Validate input
 	client := &http.Client{}
 
@@ -522,10 +593,16 @@ func ValidateConnector(c *gin.Context) {
 	}
 
 	jsonToSend, _ := json.Marshal(m)
-
-	req, err := http.NewRequest(http.MethodPut, conf.KafkaEndpoint+"connector-plugins/"+input.ConnectorClass+"/config/validate/", bytes.NewBuffer(jsonToSend))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if endpoint == conf.SshRelayApi {
+		req, err = http.NewRequest(http.MethodPut, endpoint+"api/"+worker.Name+"/"+port+"/connector-plugins/"+input.ConnectorClass+"/config/validate/", bytes.NewBuffer(jsonToSend))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+	} else {
+		req, err = http.NewRequest(http.MethodPut, endpoint+"connector-plugins/"+input.ConnectorClass+"/config/validate/", bytes.NewBuffer(jsonToSend))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
 	}
 
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")

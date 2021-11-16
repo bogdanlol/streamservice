@@ -243,3 +243,61 @@ func EditWorker(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": input})
 
 }
+func GenerateKey(c *gin.Context) {
+	StrId, isPresent := c.Params.Get("entityId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Id is needed "})
+		return
+	}
+	worker := &models.WorkerEntity{}
+	id, err := strconv.Atoi(StrId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Id is not int "})
+		return
+	}
+
+	if err := DB.First(&worker, id).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		return
+	}
+	endpoint, _ := utils.GetEndpointAndPort(worker.Name, worker.ConnectPort)
+	response, err := http.Get(endpoint + "api/generateKey/" + worker.Name)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	responseData, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	c.JSON(http.StatusOK, gin.H{"data": responseData})
+}
+func TestKey(c *gin.Context) {
+	StrId, isPresent := c.Params.Get("entityId")
+	if !isPresent {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Id is needed "})
+		return
+	}
+	worker := &models.WorkerEntity{}
+	id, err := strconv.Atoi(StrId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Id is not int "})
+		return
+	}
+
+	if err := DB.First(&worker, id).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		return
+	}
+	endpoint, _ := utils.GetEndpointAndPort(worker.Name, worker.ConnectPort)
+	response, err := http.Get(endpoint + "api/testKey/" + worker.Name)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	responseData, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	c.JSON(http.StatusOK, gin.H{"data": responseData})
+}

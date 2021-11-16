@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
+	"streamingservice/config"
 	"streamingservice/db"
 	"streamingservice/models"
 	"strings"
@@ -17,6 +19,7 @@ import (
 )
 
 var DB = db.New()
+var conf = config.NewConfig()
 
 func Untar(dst string, r io.Reader) error {
 
@@ -157,4 +160,16 @@ func StringInSlice(a string, list []string) bool {
 		}
 	}
 	return false
+}
+func GetEndpointAndPort(workerName string, Port uint) (string, string) {
+	var endpoint string
+	var port string
+
+	if workerName != "localhost" {
+		endpoint = conf.SshRelayApi
+	} else {
+		endpoint = conf.KafkaEndpoint
+	}
+	port = strconv.Itoa(int(Port))
+	return endpoint, port
 }
