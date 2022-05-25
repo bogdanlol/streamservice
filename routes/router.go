@@ -42,6 +42,7 @@ func New() *gin.Engine {
 	// router.Use(cors.Default())
 
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
+		//testing env jwtkey
 		Realm:       "test zone",
 		Key:         []byte("secret key"),
 		Timeout:     time.Hour * 480,
